@@ -8,7 +8,7 @@ async def create_user_vacancy(db: AsyncSession, vacancy: VacancyCreate, user_id:
     """Создает вакансию для пользователя."""
     data = vacancy.model_dump()
     data['url'] = str(data['url'])
-
+    
     db_vacancy = Vacancy(**data, user_id=user_id)
     db.add(db_vacancy)
     await db.commit()
@@ -29,3 +29,13 @@ async def get_vacancy(db: AsyncSession, vacancy_id: int, user_id: int) -> Vacanc
         select(Vacancy).where(Vacancy.id == vacancy_id, Vacancy.user_id == user_id)
 	)
     return result.scalars().first()
+
+async def remove_vacancy(db: AsyncSession, vacancy_id: int, user_id: int) -> Vacancy | None:
+    """
+    Удаляет вакансию по ID, проверяя, что она принадлежит пользователю.
+    """
+    db_vacancy = await get_vacancy(db=db, vacancy_id=vacancy_id, user_id=user_id)
+    if db_vacancy:
+        await db.delete(db_vacancy)
+        await db.commit()
+    return db_vacancy
