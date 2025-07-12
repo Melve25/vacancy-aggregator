@@ -2,11 +2,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.vacancy import Vacancy
-from app.schemas.vacancy import VacancyCreate, VacancyUpdate
+from app.schemas.vacancy import VacancyCreate
 
 async def create_user_vacancy(db: AsyncSession, vacancy: VacancyCreate, user_id: int) -> Vacancy:
     """Создает вакансию для пользователя."""
-    db_vacancy = Vacancy(**vacancy.model_dump(), user_id=user_id)
+    data = vacancy.model_dump()
+    data['url'] = str(data['url'])
+
+    db_vacancy = Vacancy(**data, user_id=user_id)
     db.add(db_vacancy)
     await db.commit()
     await db.refresh(db_vacancy)

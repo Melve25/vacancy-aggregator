@@ -1,8 +1,11 @@
 from sqlalchemy import Integer, String, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 
 from app.db.base import Base
-from app.models.user import User
+
+if TYPE_CHECKING:
+	from app.models.user import User
 
 class Vacancy(Base):
 	__tablename__ = 'vacancies'

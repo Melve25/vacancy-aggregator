@@ -5,7 +5,7 @@ class VacancyBase(BaseModel):
 	url: HttpUrl
 	title: Optional[str] = None
 	company: Optional[str] = None
-	locations: Optional[str] = None
+	location: Optional[str] = None
 	description: Optional[str] = None
 	status: Optional[str] = 'new'
 
@@ -26,3 +26,6 @@ class VacancyRead(VacancyBase):
 
 	class Config:
 		from_attributes = True
+
+class VacancyParseRequest(BaseModel):
+    url: HttpUrl
