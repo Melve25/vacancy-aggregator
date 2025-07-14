@@ -1,6 +1,7 @@
 import json
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.vacancy import VacancyRead, VacancyParseRequest, VacancyUpdate
@@ -35,6 +36,7 @@ async def parse_and_create_vacancy(
 	except ValueError as e:
 		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 	
+	await clear_vacancies_cache(current_user.id)
 	return await create_user_vacancy(db=db, vacancy=parse_data, user_id=current_user.id)
 
 @router.get('/', response_model=List[VacancyRead])
@@ -79,6 +81,8 @@ async def update_vacancy_status(
 	
 	update_data = vacancy_in.model_dump(exclude_unset=True)
 	for field, value in update_data.items():
+		if field == "url" and isinstance(value, HttpUrl):
+			value = str(value)
 		setattr(db_vacancy, field, value)
 
 	await db.commit()
