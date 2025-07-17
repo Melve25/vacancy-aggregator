@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
@@ -18,7 +18,31 @@ from app.models.user import User
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/jwt/login')
 
-
+async def get_current_user_graphql(request: Request, db: AsyncSession) -> User:
+	"""
+	Получает токен из headers и возвращает пользователя.
+	"""
+	auth_header = request.headers.get('Authorization')
+	if not auth_header or not auth_header.startswith("Bearer "):
+		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Not authenticated')
+	
+	token = auth_header.split('Bearer ')[1]
+	
+	try:
+		payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+		email: str = payload.get('sub')
+		if email is None:
+			raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid token payload')
+		token_data = TokenData(email=email)
+	except JWTError:
+		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid token')
+	
+	user = await get_user_by_email(db=db, email=token_data.email)
+	if user is None:
+		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='User not found')
+	
+	return user
+	
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: AsyncSession = Depends(get_db)) -> User:
 	"""
 	Декорирует токен и возвращает пользователя.
